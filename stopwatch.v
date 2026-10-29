@@ -7,7 +7,6 @@ module stopwatch (
    input btnR, 
    input clk
 );
-
     reg [6:0] num [0:9];
     initial begin
         num[0] = 7'b1000000; // NUM_0
@@ -29,46 +28,70 @@ module stopwatch (
    
    reg[1:0] anode_select = 0;
    
-// Cleaned up duplicate declarations
-   reg [26:0] count_1hz = 0;
+   reg [27:0] count_1hz = 0;
    reg [25:0] count_2hz = 0;
    reg [17:0] count_refresh = 0;
    reg [24:0] count_blink = 0; 
-   
-   reg clk_1hz = 0;      
-   reg clk_2hz = 0;      
-   reg clk_refresh = 0;  
-   reg clk_blink = 0;
+   reg clk_1hz;      
+   reg clk_2hz;      
+   reg clk_refresh;  
+   reg clk_blink;     
+   reg pause = 0;
 
+    reg btnS_sync0, btnS_sync1;
+    reg btnS_last;
+    wire btnS_pressed;
+
+    always @(posedge clk) begin
+        btnS_sync0 <= btnS;       
+        btnS_sync1 <= btnS_sync0;
+        btnS_last  <= btnS_sync1; 
+    end
+    assign btnS_pressed = (btnS_sync1 && !btnS_last);
+    
    always @(posedge clk) begin
-      
-      if (count_1hz == 99_999_999) begin
-            count_1hz <= 0;
-            clk_1hz   <= ~clk_1hz;
-            
-            if (sec_ones == 9) begin
-                sec_ones <= 0;
-                if (sec_tens == 5) begin
-                    sec_tens <= 0;
-                    if (min_ones == 9) begin
-                        min_ones <= 0;
-                        if (min_tens == 5) begin
-                            min_tens <= 0;
+          
+       if (btnS_pressed) begin
+           pause <= ~pause;
+       end 
+       
+       if (btnR) begin
+         sec_ones <= 0;
+         min_ones <= 0;
+         sec_tens <= 0;
+         min_tens <= 0;
+      end else
+       if (!pause) begin               
+          if (count_1hz == 99_999_999) begin
+                count_1hz <= 0;
+                clk_1hz   <= ~clk_1hz;
+                
+                if (pause == 0) begin
+                    if (sec_ones == 9) begin
+                        sec_ones <= 0;
+                        if (sec_tens == 5) begin
+                            sec_tens <= 0;
+                            if (min_ones == 9) begin
+                                min_ones <= 0;
+                                if (min_tens == 5) begin
+                                    min_tens <= 0;
+                                end else begin
+                                    min_tens <= min_tens + 1;
+                                end
+                            end else begin
+                                min_ones <= min_ones + 1;
+                            end
                         end else begin
-                            min_tens <= min_tens + 1;
+                            sec_tens <= sec_tens + 1;
                         end
                     end else begin
-                        min_ones <= min_ones + 1;
-                    end
-                end else begin
-                    sec_tens <= sec_tens + 1;
+                        sec_ones <= sec_ones + 1;
                 end
-            end else begin
-                sec_ones <= sec_ones + 1;
             end
-        end else begin
-            count_1hz <= count_1hz + 1;
-        end
+            end else begin
+                count_1hz <= count_1hz + 1;
+            end
+      end
 
       if (count_2hz == 49_999_999) begin
           count_2hz <= 0;
@@ -97,23 +120,23 @@ module stopwatch (
  always @(*) begin
     case (anode_select)
         2'b00: begin
-            an  = 4'b1110;          // Turn on rightmost digit (Seconds Ones)
-            seg = num[sec_ones];    // Lookup array segment pattern
+            an  = 4'b1110;          
+            seg = num[sec_ones];    
         end
         2'b01: begin
-            an  = 4'b1101;          // Turn on second digit (Seconds Tens)
+            an  = 4'b1101;          
             seg = num[sec_tens];
         end
         2'b10: begin
-            an  = 4'b1011;          // Turn on third digit (Minutes Ones)
+            an  = 4'b1011;          
             seg = num[min_ones];
         end
         2'b11: begin
-            an  = 4'b0111;          // Turn on leftmost digit (Minutes Tens)
+            an  = 4'b0111;          
             seg = num[min_tens];
         end
         default: begin
-            an  = 4'b1111;          // Safety turn-off
+            an  = 4'b1111;         
             seg = 7'b1111111;
         end
     endcase
