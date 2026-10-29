@@ -7,16 +7,7 @@ module stopwatch (
    input btnR, 
    input clk
 );
-//   parameter NUM_0 = 7'b1000000;
-//   parameter NUM_1 = 7'b1111001;
-//   parameter NUM_2 = 7'b0100100;
-//   parameter NUM_3 = 7'b0110000;
-//   parameter NUM_4 = 7'b0011001;
-//   parameter NUM_5 = 7'b0010010;
-//   parameter NUM_6 = 7'b0000010;
-//   parameter NUM_7 = 7'b1111000;
-//   parameter NUM_8 = 7'b0000000;
-//   parameter NUM_9 = 7'b0010000;
+
     reg [6:0] num [0:9];
     initial begin
         num[0] = 7'b1000000; // NUM_0
@@ -38,19 +29,16 @@ module stopwatch (
    
    reg[1:0] anode_select = 0;
    
-   reg [27:0] count_1hz = 0;
-   reg clk_1hz = 0;
+// Cleaned up duplicate declarations
+   reg [26:0] count_1hz = 0;
    reg [25:0] count_2hz = 0;
    reg [17:0] count_refresh = 0;
    reg [24:0] count_blink = 0; 
-   reg [26:0] count_1hz     = 0;
-   reg [25:0] count_2hz     = 0;
-   reg [17:0] count_refresh = 0;
-   reg [24:0] count_blink   = 0;
-   reg clk_1hz;      
-   reg clk_2hz;      
-   reg clk_refresh;  // Internal ~400 Hz anode cycling ;
-   reg clk_blink;     // 4hz
+   
+   reg clk_1hz = 0;      
+   reg clk_2hz = 0;      
+   reg clk_refresh = 0;  
+   reg clk_blink = 0;
 
    always @(posedge clk) begin
       
