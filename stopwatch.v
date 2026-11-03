@@ -1,5 +1,5 @@
 module stopwatch (
-   input wire [3:0] sw,       //switches
+   input wire [1:0] sw,       //switches
    output reg [6:0] seg,      //cathodes
    output reg [3:0] an,        //anodes
    //pause button, reset button, clock
@@ -7,6 +7,16 @@ module stopwatch (
    input btnR, 
    input clk
 );
+//   parameter NUM_0 = 7'b1000000;
+//   parameter NUM_1 = 7'b1111001;
+//   parameter NUM_2 = 7'b0100100;
+//   parameter NUM_3 = 7'b0110000;
+//   parameter NUM_4 = 7'b0011001;
+//   parameter NUM_5 = 7'b0010010;
+//   parameter NUM_6 = 7'b0000010;
+//   parameter NUM_7 = 7'b1111000;
+//   parameter NUM_8 = 7'b0000000;
+//   parameter NUM_9 = 7'b0010000;
     reg [6:0] num [0:9];
     initial begin
         num[0] = 7'b1000000; // NUM_0
@@ -41,13 +51,26 @@ module stopwatch (
     reg btnS_sync0, btnS_sync1;
     reg btnS_last;
     wire btnS_pressed;
+    wire sw0_pressed, sw1_pressed;
+    reg sw0_0, sw0_1, sw0_last;
+    reg sw1_0, sw1_1, sw1_last;
 
     always @(posedge clk) begin
         btnS_sync0 <= btnS;       
         btnS_sync1 <= btnS_sync0;
-        btnS_last  <= btnS_sync1; 
+        btnS_last  <= btnS_sync1;
+        
+//        sw0_0 <= sw[0];       
+//        sw0_1 <= sw0_0;
+//        sw0_last  <= sw0_1; 
+        
+//        sw1_0 <= sw[1];       
+//        sw1_1 <= sw1_0;
+//        sw1_last  <= sw1_1; 
     end
     assign btnS_pressed = (btnS_sync1 && !btnS_last);
+//    assign sw0_pressed = (sw0_1 && !sw0_last);
+//    assign sw1_pressed = (sw1_1 && !sw1_last);
     
    always @(posedge clk) begin
           
@@ -61,7 +84,7 @@ module stopwatch (
          sec_tens <= 0;
          min_tens <= 0;
       end else
-       if (!pause) begin               
+       if (!pause && !sw[0]) begin               
           if (count_1hz == 99_999_999) begin
                 count_1hz <= 0;
                 clk_1hz   <= ~clk_1hz;
@@ -96,8 +119,36 @@ module stopwatch (
       if (count_2hz == 49_999_999) begin
           count_2hz <= 0;
           clk_2hz   <= ~clk_2hz;
-      end else begin
-          count_2hz <= count_2hz + 1;
+       if (sw[0]) begin
+          if (sw[1]) begin
+            if (sec_ones == 9) begin
+                  sec_ones <= 0;
+                  
+                   if (sec_tens == 5) begin
+                     sec_tens <= 0;
+                   end else begin
+                     sec_tens <= sec_tens + 1;
+                   end
+                   
+              end else begin
+                  sec_ones <= sec_ones + 1;
+             end
+             
+           end else begin
+             if (min_ones == 9) begin
+                 min_ones <= 0;
+                 if (min_tens == 5) begin
+                  min_tens <= 0;
+                 end else begin
+                   min_tens <= min_tens + 1;
+                 end
+             end else begin
+                 min_ones <= min_ones + 1;
+             end
+          end
+        end
+          end else begin
+              count_2hz <= count_2hz + 1;
       end
 
       if (count_refresh == 124_999) begin
@@ -109,6 +160,9 @@ module stopwatch (
       end
 
       if (count_blink == 12_499_999) begin
+        if (sw[0]) begin
+          an  <= ~an;
+        end
           count_blink <= 0;
           clk_blink   <= ~clk_blink;
       end else begin
