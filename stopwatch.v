@@ -60,13 +60,14 @@ module stopwatch (
          min_ones <= 0;
          sec_tens <= 0;
          min_tens <= 0;
-      end else
-       if (!pause) begin               
+      end else begin
+         // no if !pause to allow background clock divider
           if (count_1hz == 99_999_999) begin
                 count_1hz <= 0;
                 clk_1hz   <= ~clk_1hz;
                 
-                if (pause == 0) begin
+                // Only increment if ADJ is OFF and Timer is UNPAUSED
+                if (sw[1] == 0 && !pause) begin
                     if (sec_ones == 9) begin
                         sec_ones <= 0;
                         if (sec_tens == 5) begin
@@ -96,6 +97,28 @@ module stopwatch (
       if (count_2hz == 49_999_999) begin
           count_2hz <= 0;
           clk_2hz   <= ~clk_2hz;
+         // Only increment if ADJ is ON
+          if (sw[1] == 1) begin
+              if (sw[0] == 0) begin 
+                  // SEL = 0: Adjust Minutes (Seconds frozen)
+                  if (min_ones == 9) begin
+                      min_ones <= 0;
+                      if (min_tens == 5) min_tens <= 0;
+                      else min_tens <= min_tens + 1;
+                  end else begin
+                      min_ones <= min_ones + 1;
+                  end
+              end else begin 
+                  // SEL = 1: Adjust Seconds (Minutes frozen)
+                  if (sec_ones == 9) begin
+                      sec_ones <= 0;
+                      if (sec_tens == 5) sec_tens <= 0;
+                      else sec_tens <= sec_tens + 1;
+                  end else begin
+                      sec_ones <= sec_ones + 1;
+                  end
+              end
+          end
       end else begin
           count_2hz <= count_2hz + 1;
       end
@@ -121,19 +144,32 @@ module stopwatch (
     case (anode_select)
         2'b00: begin
             an  = 4'b1110;          
-            seg = num[sec_ones];    
+            // Blank display if Adjusting Seconds (ADJ=1, SEL=1) and Blink Clock is high
+             if (sw[1] == 1 && sw[0] == 1 && clk_blink) 
+                 seg = 7'b1111111;
+             else 
+                 seg = num[sec_ones];
         end
         2'b01: begin
             an  = 4'b1101;          
-            seg = num[sec_tens];
+            if (sw[1] == 1 && sw[0] == 1 && clk_blink) 
+                 seg = 7'b1111111;
+             else 
+                 seg = num[sec_tens];
         end
         2'b10: begin
             an  = 4'b1011;          
-            seg = num[min_ones];
+            if (sw[1] == 1 && sw[0] == 0 && clk_blink) 
+                 seg = 7'b1111111;
+             else 
+                 seg = num[min_ones];
         end
         2'b11: begin
             an  = 4'b0111;          
-            seg = num[min_tens];
+            if (sw[1] == 1 && sw[0] == 0 && clk_blink) 
+                 seg = 7'b1111111;
+             else 
+                 seg = num[min_tens];
         end
         default: begin
             an  = 4'b1111;         
